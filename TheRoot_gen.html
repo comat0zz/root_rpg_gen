@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru-RU">
+<head>
+  <title>Генератор вещей и оружия для Root RPG</title>
+  <style>
+    table {
+      border: 1px solid black;
+      text-align: center;
+      width: 100%;
+    }
+    td {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+<table>
+  <thead>
+  <tr>
+    <th>Тип</th>
+    <th>Стоимость</th>
+    <th>Ячейки износа</th>
+    <th>Дистанция</th>
+    <th>Метки +</th>
+    <th>Метки -</th>
+  </tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+</body>
+<script>
+
+// Максимальная ценность предметов
+const MAX_VALUE = 8;
+// Максимальное количество отрицательных тегов, от 0 до N
+const MAX_TAGS_MINUS = 2;
+
+const getRandomInt = function(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1) + min);
+};
+
+const sword_tags = [
+  "Большое",
+  "Быстрое",
+  "Выпад",
+  "Гибкое"
+];
+
+const bow_tags = [
+  "Для коротких лап",
+  "Металлические болты",
+  "Обманчивое",
+  "Промасленная тетива",
+  "Скорострельное",
+  "Тугая тетива"
+];
+
+const staff_tags = [
+  "Дружелюбное",
+  "Незаметное",
+  "Тупое"
+];
+
+const mace_tags = [
+  "Тяжёлое навершие",
+  "Тупое"
+]
+
+const sheild_tags = [
+  "Толстое"
+];
+
+const armor_tags = [
+  "Дружелюбное",
+  "Незаметное",
+  "Плотно сплетённое",
+  "Стрелонепробиваемое",
+  "Удобное",
+
+];
+
+const weapon_tags = [
+  "Мышиная сталь",
+  "Мощное",
+  "Острое",
+  "Созданное орлами",
+  "Стремительное"
+];
+
+const common_tags = [
+  "Заметное",
+  "Кошачья сталь",
+  "Кроличья сталь",
+  "Лисья сталь",
+  "Прочное",
+  "Роскошное",
+  "Универсальное",
+  "Церемониальное"
+];
+
+const weapon_tags_minus = [
+  "Громоздкое",
+  "Зловещее",
+  "Медленное",
+  "Неподъёмное",
+  "Уродливое",
+  "Хрупкое"
+];
+
+const armor_tags_minus = [
+  "Неудобное",
+
+];
+
+const common_tags_minus = [
+  "Дрянное",
+  "Ненавистное",
+  "Тяжёлое"
+];
+
+// Создавайте по аналогии еще структуры типов вещей, их подхватит
+const typeWeapons = [
+  {
+    // Возможные имена предметов
+    names: ["Меч", "Кинжал"],
+    // Положительные теги для группы
+    tags: [ ...common_tags, ...weapon_tags, ...sword_tags ],
+    // Отрицательные теги для группы
+    minus: [ ...common_tags_minus, ...weapon_tags_minus ],
+    // Первичная дистанция
+    distance: ["Личная"],
+    // Возможные варианты дистанций, может быть несколько
+    distance_add: ["Ближняя"]
+  },
+  {
+    names: ["Посох"],
+    tags: [ ...common_tags, ...weapon_tags, ...staff_tags ],
+    minus: [ ...common_tags_minus, ...weapon_tags_minus ],
+    distance: ["Личная"],
+    distance_add: ["Ближняя"]
+  },
+  {
+    names: ["Булава", "Молот"],
+    tags: [ ...common_tags, ...weapon_tags, ...mace_tags ],
+    minus: [ ...common_tags_minus, ...weapon_tags_minus ],
+    distance: ["Личная"],
+    distance_add: ["Ближняя"]
+  },
+  {
+    names: ["Лук", "Арбалет"],
+    tags: [ ...common_tags, ...weapon_tags, ...bow_tags ],
+    minus: [ ...common_tags_minus, ...weapon_tags_minus ],
+    distance: ["Ближняя"],
+    distance_add: ["Дальняя"]
+  },
+  {
+    names: ["Щит"],
+    tags: [ ...common_tags, ...sheild_tags ],
+    minus: [ ...common_tags_minus, ...armor_tags_minus ],
+    distance: []
+  },
+  {
+    names: ["Шлем", "Доспех", "Ботинки", "Гульфик"],
+    tags: [ ...common_tags, ...armor_tags ],
+    minus: [ ...common_tags_minus, ...armor_tags_minus ],
+    distance: []
+  }
+];
+
+function getItem() {
+
+  // Первоначальный износ, учтено ниже
+  var wear = 1;
+  // Тащим объект с типом вещей
+  var idType = getRandomInt(0, typeWeapons.length - 1);
+  // Просто сделать запись короче
+  var item = typeWeapons[idType];
+  // Узнаем теги группы
+  var tags = item.tags.length;
+  var minus = item.minus.length;
+  // Выбираем имя
+  var idxName = getRandomInt(0, item.names.length - 1);
+  var name = item.names[idxName];
+  
+  // Определяем базовую ценность
+  // От 1, т.к. у нас всегда есть 1 ячейка износа
+  var value = getRandomInt(1, MAX_VALUE);
+  // Единичку зарезервируем под 1 износ
+  value -= 1;
+  // Узнаем количество тегов, которые навесим
+  var cTags = getRandomInt(1, value);
+  // Учтем в остатке
+  value -= cTags;
+  // Остальное кинем в износ, если что осталось
+  wear += value;
+  // Массив с тегами
+  var newTags = [];
+  // Если cTags слишком маленький, то прибавим к нему немного
+  cTags = (cTags<2)?3:cTags;
+  // Тащим теги
+  for(var i=0;i<cTags;i++) {
+    newTags.push(item.tags[getRandomInt(0, tags - 1)]);
+  }
+
+  var minusTags = [];
+  // Навешиваем отрицательные теги
+  // С шансом 50%\50%
+
+  if(getRandomInt(0,1)) {
+    var max_minus = getRandomInt(0, MAX_TAGS_MINUS);
+    for(var i=0;i<max_minus;i++) {
+      minusTags.push(item.minus[getRandomInt(0, minus - 1)])
+    }
+  }
+
+  // Дистанция
+  var dist = [];
+  // Если массив изначально пустой, думаем что какой-то предмет, не оружие
+  if(item.distance.length > 0) {
+    dist = item.distance;
+    // Пусть будет 20%, что мы дадим еще одну дистацию
+    if(getRandomInt(0,10) <= 2) {
+      // Чтобы что-то добавить, это должно быть :)
+      if(item.hasOwnProperty('distance_add')) {
+        // И оно не должно быть пустым
+        // Я знаю, что можно написать красивее, но я тут комментить еще пытаюсь
+        if(item.distance_add.length > 0) {
+          var iDist = getRandomInt(0, item.distance_add.length - 1);
+          // Не буду добавлять кучу, их и так не много, пусть будет только 1
+          dist.push(item.distance_add[iDist]);
+        }
+      }
+    }
+  }
+
+  // Считаем стоимость
+  // Выячитаем базовую, ибо она по умолчанию входит
+  var mDist = dist.length - item.distance.length;
+  var price = wear + newTags.length + mDist - minusTags.length;
+
+  newTags = [...new Set(newTags)];
+  minusTags = [...new Set(minusTags)];
+  dist = [...new Set(dist)];
+
+  return {
+    name: name,
+    price: price,
+    wear: wear,
+    tags: newTags.join(', '),
+    minusTags: minusTags.join(', '),
+    distance: dist.join(', ')
+  }
+}
+
+
+var tableBody = document.getElementById("tableBody");
+
+for(let i = 0; i < 150; i++) {
+
+  var itm = getItem();
+  tableBody.insertRow().innerHTML = `<tr><td>${itm.name}</td><td>${itm.price}</td><td>${itm.wear}</td><td>${itm.distance}</td><td>${itm.tags}</td><td>${itm.minusTags}</td></tr>`;
+
+}
+
+</script>
+</html>
